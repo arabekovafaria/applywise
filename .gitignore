@@ -1,0 +1,8 @@
+.env
+.env.*
+.railway/
+.venv/
+__pycache__/
+*.py[cod]
+outputs/
+work/
