@@ -60,7 +60,9 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
-        self.send_header("Referrer-Policy", "no-referrer")
+        # Same-origin form submissions can use Referer as a CSRF fallback
+        # when the browser omits Origin. Never send the referrer cross-origin.
+        self.send_header("Referrer-Policy", "same-origin")
         self.send_header("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")
         for k, v in (extra or {}).items(): self.send_header(k, v)
         self.end_headers()
