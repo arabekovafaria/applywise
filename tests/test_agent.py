@@ -93,10 +93,12 @@ class AgentTests(unittest.TestCase):
     def test_user_content_is_html_escaped_in_report(self):
         report = {"requirements": [], "action_plan": [], "cover_letter_claims": [], "tool_trace": [], "unsupported_claims": [],
                   "approved": False, "draft_id": "id123", "model": "model", "role_title": "<script>alert(1)</script>",
-                  "agent_summary": "Ready", "cover_letter": "Safe"}
+                  "agent_summary": "**Raw markdown summary that is duplicated below**", "cover_letter": "Safe"}
         html = _render_report(report)
         self.assertNotIn("<script>", html)
         self.assertIn("&lt;script&gt;", html)
+        self.assertNotIn("**Raw markdown summary", html)
+        self.assertIn("Draft prepared. Review the evidence, gaps, and cover letter below.", html)
 
     def test_post_requests_must_be_same_origin(self):
         headers = HTTPMessage()
