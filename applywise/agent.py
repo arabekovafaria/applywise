@@ -179,7 +179,15 @@ def _post_response(payload: dict[str, Any], api_key: str, opener: Callable[..., 
         with open_fn(request, timeout=90) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        details = _error_details(exc.read())
+        body = exc.read()
+        details = _error_details(body)
+        if not details and exc.headers:
+            response_type = exc.headers.get("Content-Type", "").split(";", 1)[0].strip()
+            request_id = exc.headers.get("x-request-id") or exc.headers.get("cf-ray")
+            if response_type:
+                details = f"Provider response type: {response_type}"
+            if request_id:
+                details = f"{details} (request ID: {request_id[:100]})".strip()
         if exc.code == 401: raise AgentError("The API key was rejected. Check it and try again.") from exc
         if exc.code == 429: raise AgentError("The API limit was reached. Check API billing or try again later.") from exc
         raise AgentError(f"The model API returned HTTP {exc.code}. {details[:280]}".strip()) from exc
