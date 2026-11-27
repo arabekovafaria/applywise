@@ -179,13 +179,32 @@ def _post_response(payload: dict[str, Any], api_key: str, opener: Callable[..., 
         with open_fn(request, timeout=90) as response:
             return json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
-        try: details = json.loads(exc.read().decode("utf-8")).get("error", {}).get("message", "")
-        except Exception: details = ""
+        details = _error_details(exc.read())
         if exc.code == 401: raise AgentError("The API key was rejected. Check it and try again.") from exc
         if exc.code == 429: raise AgentError("The API limit was reached. Check API billing or try again later.") from exc
         raise AgentError(f"The model API returned HTTP {exc.code}. {details[:280]}".strip()) from exc
     except urllib.error.URLError as exc:
         raise AgentError("Could not reach the model API. Check your internet connection and try again.") from exc
+
+
+def _error_details(body: bytes) -> str:
+    """Extract a concise provider error without exposing arbitrary response bodies."""
+    try:
+        payload = json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    error = payload.get("error", payload)
+    if isinstance(error, str):
+        return error
+    if not isinstance(error, dict):
+        return ""
+    message = error.get("message") or error.get("detail") or error.get("error_description")
+    code = error.get("code") or error.get("type")
+    if message and code and str(code) not in str(message):
+        return f"{message} ({code})"
+    return str(message or code or "")
 
 
 def run_agent(job_description: str, resume: str, api_key: str, model: str = DEFAULT_MODEL,

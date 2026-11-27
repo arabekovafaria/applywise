@@ -5,7 +5,7 @@ from types import SimpleNamespace
 from http.client import HTTPMessage
 from unittest.mock import patch
 
-from applywise.agent import AgentError, AgentTools, approve_draft, export_draft, run_agent
+from applywise.agent import AgentError, AgentTools, _error_details, approve_draft, export_draft, run_agent
 from applywise.app import Handler, _form, _render_report
 
 
@@ -28,6 +28,17 @@ def call(name, args, call_id):
 
 
 class AgentTests(unittest.TestCase):
+    def test_provider_error_details_support_nested_and_top_level_shapes(self):
+        self.assertEqual(
+            _error_details(b'{"error":{"message":"Model access denied","code":"permissions_error"}}'),
+            "Model access denied (permissions_error)",
+        )
+        self.assertEqual(
+            _error_details(b'{"message":"Request blocked","code":"access_denied"}'),
+            "Request blocked (access_denied)",
+        )
+        self.assertEqual(_error_details(b"<html>blocked</html>"), "")
+
     def test_real_tool_loop_searches_then_stages_then_finishes(self):
         draft_args = {
             "role_title": "AI internship",
