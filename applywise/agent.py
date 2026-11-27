@@ -171,7 +171,12 @@ def _post_response(payload: dict[str, Any], api_key: str, opener: Callable[..., 
     request = urllib.request.Request(
         API_URL,
         data=json.dumps(payload).encode("utf-8"),
-        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": "ApplyWise/1.0",
+        },
         method="POST",
     )
     open_fn = opener or urllib.request.urlopen
