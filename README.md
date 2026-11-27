@@ -12,6 +12,8 @@ python -m applywise.app
 
 Open <http://127.0.0.1:8000>. Paste the job description and resume, enter your API key, keep or change the model ID, and check the consent box. The run makes multiple Responses API calls while the model uses tools. Availability and usage limits depend on your Groq account.
 
+For a hosted demo, set `GROQ_API_KEY` in the host's secret environment variables. When this is set, the app uses that key server-side and does not ask visitors to provide one. The consent notice tells visitors that requests use the site owner's key.
+
 For another Responses API compatible provider, set `APPLYWISE_API_URL`, `APPLYWISE_PROVIDER`, and `APPLYWISE_MODEL` before starting the app. Never place API keys in source code or commit them.
 
 ## What the agent does

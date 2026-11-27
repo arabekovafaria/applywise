@@ -102,10 +102,13 @@ class Handler(BaseHTTPRequestHandler):
         if parsed.path != "/":
             return self._send(_layout(_error("Page not found.")), 404)
         if form.get("consent", [""])[0] != "yes":
-            return self._send(_layout(_error("Confirm that you understand the job description and resume will be sent to OpenAI for analysis.") + _form(form)), 400)
+            return self._send(_layout(_error(f"Confirm that you understand the job description and resume will be sent to {API_PROVIDER} for analysis.") + _form(form)), 400)
         job = form.get("job", [""])[0]
         resume = form.get("resume", [""])[0]
-        key = form.get("api_key", [""])[0]
+        # A key configured in the hosting environment takes precedence and
+        # never needs to pass through the browser. Local users can still enter
+        # their own key when no server key is configured.
+        key = os.environ.get("GROQ_API_KEY", "").strip() or form.get("api_key", [""])[0]
         model = form.get("model", [DEFAULT_MODEL])[0].strip() or DEFAULT_MODEL
         try:
             report = run_agent(job, resume, key, model)
@@ -183,7 +186,16 @@ def _form(values: dict | None = None) -> str:
     model = escape(v.get("model", [DEFAULT_MODEL])[0], quote=True)
     checked = ' checked' if v.get("consent", [""])[0] == "yes" else ""
     provider = escape(API_PROVIDER)
-    return f'''<form method="post" class="card"><div class="grid"><div><label for="job">Job description</label><p class="muted">Paste the complete listing or the parts you care about most.</p><textarea id="job" name="job" maxlength="30000" required>{job}</textarea></div><div><label for="resume">Resume</label><p class="muted">Paste resume text. It is used only for this run.</p><textarea id="resume" name="resume" maxlength="30000" required>{resume}</textarea></div></div><p><label for="api_key">{provider} API key</label><input id="api_key" type="password" name="api_key" autocomplete="off" required><span class="small">Used for this request only; ApplyWise does not save it.</span></p><p><label for="model">Model ID</label><input id="model" type="text" name="model" value="{model}" maxlength="100"></p><div class="consent">The job description, resume, and your API key are sent to the ApplyWise server to make a request to {provider}. The server operator can technically access information processed by the server. This app does not save these values to disk; the API provider processes the request under your account settings.</div><label class="check"><input type="checkbox" name="consent" value="yes"{checked} required><span>I understand and consent to sending these texts and my API key through the ApplyWise server to {provider} for this analysis.</span></label><button class="btn" type="submit">Run the AI agent</button></form>'''
+    server_key_configured = bool(os.environ.get("GROQ_API_KEY", "").strip())
+    if server_key_configured:
+        key_control = f'<p class="small">The {provider} API key is configured securely by the site owner and is used for this request.</p>'
+        consent_copy = f'The job description and resume are sent through the ApplyWise server to {provider} using the site owner’s configured API key. The server operator can access information processed by the server. The app does not save these values to disk; {provider} processes the request under the key owner’s account settings.'
+        consent_label = f'I understand and consent to sending these texts through this ApplyWise server to {provider} for this analysis.'
+    else:
+        key_control = f'<p><label for="api_key">{provider} API key</label><input id="api_key" type="password" name="api_key" autocomplete="off" required><span class="small">Used for this request only; ApplyWise does not save it.</span></p>'
+        consent_copy = f'The job description, resume, and your API key are sent to the ApplyWise server to make a request to {provider}. The server operator can technically access information processed by the server. This app does not save these values to disk; the API provider processes the request under your account settings.'
+        consent_label = f'I understand and consent to sending these texts and my API key through the ApplyWise server to {provider} for this analysis.'
+    return f'''<form method="post" class="card"><div class="grid"><div><label for="job">Job description</label><p class="muted">Paste the complete listing or the parts you care about most.</p><textarea id="job" name="job" maxlength="30000" required>{job}</textarea></div><div><label for="resume">Resume</label><p class="muted">Paste resume text. It is used only for this run.</p><textarea id="resume" name="resume" maxlength="30000" required>{resume}</textarea></div></div>{key_control}<p><label for="model">Model ID</label><input id="model" type="text" name="model" value="{model}" maxlength="100"></p><div class="consent">{consent_copy}</div><label class="check"><input type="checkbox" name="consent" value="yes"{checked} required><span>{consent_label}</span></label><button class="btn" type="submit">Run the AI agent</button></form>'''
 
 
 if __name__ == "__main__":

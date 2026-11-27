@@ -3,6 +3,7 @@ import json
 import unittest
 from types import SimpleNamespace
 from http.client import HTTPMessage
+from unittest.mock import patch
 
 from applywise.agent import AgentError, AgentTools, approve_draft, export_draft, run_agent
 from applywise.app import Handler, _form, _render_report
@@ -98,6 +99,14 @@ class AgentTests(unittest.TestCase):
         html = _form()
         self.assertIn("your API key are sent to the ApplyWise server", html)
         self.assertIn("I understand and consent", html)
+
+    def test_server_configured_key_is_not_requested_or_rendered(self):
+        with patch.dict("os.environ", {"GROQ_API_KEY": "sk-do-not-render"}):
+            html = _form()
+        self.assertNotIn('name="api_key"', html)
+        self.assertNotIn("sk-do-not-render", html)
+        self.assertIn("API key is configured securely by the site owner", html)
+        self.assertIn("using the site owner’s configured API key", html)
 
     def test_requires_both_inputs_and_key(self):
         with self.assertRaises(AgentError): run_agent("", "resume", "sk-test")
