@@ -7,6 +7,7 @@ sent to the configured model API only after the user submits the consent form.
 from __future__ import annotations
 
 import json
+import os
 import re
 import urllib.error
 import urllib.request
@@ -14,8 +15,11 @@ import uuid
 from dataclasses import asdict, dataclass
 from typing import Any, Callable
 
-API_URL = "https://api.openai.com/v1/responses"
-DEFAULT_MODEL = "gpt-6.1-terra"
+# Groq implements the Responses API used below. Override these in the
+# environment when deploying with another compatible provider.
+API_URL = os.environ.get("APPLYWISE_API_URL", "https://api.groq.com/openai/v1/responses")
+API_PROVIDER = os.environ.get("APPLYWISE_PROVIDER", "Groq")
+DEFAULT_MODEL = os.environ.get("APPLYWISE_MODEL", "openai/gpt-oss-120b")
 MAX_TOOL_ROUNDS = 8
 
 DEVELOPER_PROMPT = """You are ApplyWise, an evidence-led job application assistant.
@@ -187,7 +191,7 @@ def _post_response(payload: dict[str, Any], api_key: str, opener: Callable[..., 
 def run_agent(job_description: str, resume: str, api_key: str, model: str = DEFAULT_MODEL,
               opener: Callable[..., Any] | None = None) -> dict[str, Any]:
     if not api_key.strip():
-        raise AgentError("Enter an OpenAI API key to run the agent.")
+        raise AgentError(f"Enter your {API_PROVIDER} API key to run the agent.")
     if not job_description.strip() or not resume.strip():
         raise AgentError("Paste both a job description and resume.")
     if len(job_description) > 30000 or len(resume) > 30000:

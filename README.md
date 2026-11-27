@@ -1,16 +1,18 @@
 # ApplyWise
 
-ApplyWise is an AI agent that prepares a job application from a role description and resume. It uses the OpenAI Responses API with function calling, searches resume lines locally, asks the model to compare requirements with returned evidence, and stages an editable application draft for review.
+ApplyWise is an AI agent that prepares a job application from a role description and resume. It uses the Groq Responses API with function calling, searches resume lines locally, asks the model to compare requirements with returned evidence, and stages an editable application draft for review.
 
 ## Run it locally
 
-Requirements: Python 3.10+ and an OpenAI API key with API access and billing enabled.
+Requirements: Python 3.10+ and a Groq API key. The default model is `openai/gpt-oss-120b`; check Groq's current model and usage limits before making live requests.
 
 ```bash
 python -m applywise.app
 ```
 
-Open <http://127.0.0.1:8000>. Paste the job description and resume, enter your API key, keep or change the model ID, and check the consent box. The default model is `gpt-6.1-terra`. The run makes multiple Responses API calls while the model uses tools. API usage is billed to the key's account; check the current model price in your API account before running.
+Open <http://127.0.0.1:8000>. Paste the job description and resume, enter your API key, keep or change the model ID, and check the consent box. The run makes multiple Responses API calls while the model uses tools. Availability and usage limits depend on your Groq account.
+
+For another Responses API compatible provider, set `APPLYWISE_API_URL`, `APPLYWISE_PROVIDER`, and `APPLYWISE_MODEL` before starting the app. Never place API keys in source code or commit them.
 
 ## What the agent does
 
@@ -26,7 +28,7 @@ The model can still make a semantic mismatch when connecting a claim to a cited 
 
 - The default web server binds to `127.0.0.1` only.
 - ApplyWise does not write the key, resume, job text, or draft to disk and suppresses request-body logging. Staged drafts expire from process memory after 45 minutes or when the server stops.
-- The API key is sent from the browser to the app server for the current request and is not placed back into the page. The server operator can technically access it while processing. The server then uses HTTPS to send API requests to `api.openai.com`.
+- The API key is sent from the browser to the app server for the current request and is not placed back into the page. The server operator can technically access it while processing. The server then uses HTTPS to send API requests to the configured provider.
 - Requests set `store: false`; review your provider account and data controls for applicable processing terms.
 - The consent checkbox must be selected before the job, resume, and key pass through the app server to the API.
 - A human must check a separate approval box before the local cover-letter download is unlocked.

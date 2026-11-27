@@ -7,7 +7,7 @@ from urllib.parse import parse_qs, urlparse
 from datetime import datetime, timedelta, timezone
 from threading import BoundedSemaphore, RLock
 import os
-from .agent import AgentError, DEFAULT_MODEL, approve_draft, export_draft, run_agent
+from .agent import API_PROVIDER, AgentError, DEFAULT_MODEL, approve_draft, export_draft, run_agent
 
 # Intentionally in-memory only. Restarting the server clears all staged drafts.
 SESSIONS: dict[str, dict] = {}
@@ -182,7 +182,8 @@ def _form(values: dict | None = None) -> str:
     resume = escape(v.get("resume", [""])[0], quote=True)
     model = escape(v.get("model", [DEFAULT_MODEL])[0], quote=True)
     checked = ' checked' if v.get("consent", [""])[0] == "yes" else ""
-    return f'''<form method="post" class="card"><div class="grid"><div><label for="job">Job description</label><p class="muted">Paste the complete listing or the parts you care about most.</p><textarea id="job" name="job" maxlength="30000" required>{job}</textarea></div><div><label for="resume">Resume</label><p class="muted">Paste resume text. It is used only for this run.</p><textarea id="resume" name="resume" maxlength="30000" required>{resume}</textarea></div></div><p><label for="api_key">OpenAI API key</label><input id="api_key" type="password" name="api_key" autocomplete="off" required><span class="small">Used for this request only; ApplyWise does not save it.</span></p><p><label for="model">Model ID</label><input id="model" type="text" name="model" value="{model}" maxlength="100"></p><div class="consent">The job description, resume, and your API key are sent to the ApplyWise server to make a request to OpenAI. The server operator can technically access information processed by the server. This app does not save these values to disk; the API provider processes the request under your account settings.</div><label class="check"><input type="checkbox" name="consent" value="yes"{checked} required><span>I understand and consent to sending these texts and my API key through the ApplyWise server to OpenAI for this analysis.</span></label><button class="btn" type="submit">Run the AI agent</button></form>'''
+    provider = escape(API_PROVIDER)
+    return f'''<form method="post" class="card"><div class="grid"><div><label for="job">Job description</label><p class="muted">Paste the complete listing or the parts you care about most.</p><textarea id="job" name="job" maxlength="30000" required>{job}</textarea></div><div><label for="resume">Resume</label><p class="muted">Paste resume text. It is used only for this run.</p><textarea id="resume" name="resume" maxlength="30000" required>{resume}</textarea></div></div><p><label for="api_key">{provider} API key</label><input id="api_key" type="password" name="api_key" autocomplete="off" required><span class="small">Used for this request only; ApplyWise does not save it.</span></p><p><label for="model">Model ID</label><input id="model" type="text" name="model" value="{model}" maxlength="100"></p><div class="consent">The job description, resume, and your API key are sent to the ApplyWise server to make a request to {provider}. The server operator can technically access information processed by the server. This app does not save these values to disk; the API provider processes the request under your account settings.</div><label class="check"><input type="checkbox" name="consent" value="yes"{checked} required><span>I understand and consent to sending these texts and my API key through the ApplyWise server to {provider} for this analysis.</span></label><button class="btn" type="submit">Run the AI agent</button></form>'''
 
 
 if __name__ == "__main__":
