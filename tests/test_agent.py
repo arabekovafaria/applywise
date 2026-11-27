@@ -113,6 +113,13 @@ class AgentTests(unittest.TestCase):
             headers.replace_header("X-Forwarded-Host", "evil.example")
             self.assertFalse(Handler._same_origin(SimpleNamespace(headers=headers)))
 
+    def test_same_origin_accepts_configured_public_domain(self):
+        headers = HTTPMessage()
+        headers.add_header("Host", "applywise.railway.internal:8000")
+        headers.add_header("Origin", "https://applywise-production-d196a324.up.railway.app")
+        with patch.dict("os.environ", {"RAILWAY_PUBLIC_DOMAIN": "", "APPLYWISE_PUBLIC_DOMAIN": "applywise-production-d196a324.up.railway.app"}):
+            self.assertTrue(Handler._same_origin(SimpleNamespace(headers=headers)))
+
     def test_consent_text_discloses_key_passes_through_server(self):
         html = _form()
         self.assertIn("your API key are sent to the ApplyWise server", html)
