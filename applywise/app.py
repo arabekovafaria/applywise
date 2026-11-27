@@ -126,10 +126,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def _same_origin(self) -> bool:
         host = self.headers.get("Host", "")
+        # Railway's edge can forward requests with an internal Host header.
+        # Use its deployment-provided public domain as the trusted host
+        # fallback rather than trusting a client-supplied forwarded header.
+        railway_domain = os.environ.get("RAILWAY_PUBLIC_DOMAIN", "").strip()
         origin = self.headers.get("Origin", "")
         referer = self.headers.get("Referer", "")
         source = urlparse(origin or referer)
-        return bool(host and source.netloc == host and source.scheme in {"http", "https"})
+        allowed_hosts = {value for value in (host, railway_domain) if value}
+        return bool(allowed_hosts and source.netloc in allowed_hosts and source.scheme in {"http", "https"})
 
 
 class BoundedHTTPServer(ThreadingHTTPServer):
